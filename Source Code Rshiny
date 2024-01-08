@@ -1,0 +1,87 @@
+######Rshiny-----------------------------------------------------------------------------------------------------------------------------------------------------------
+library(shiny)
+library(shinydashboard)
+library(dplyr)
+
+#load data e-commerce
+e.corm <- data.frame(
+  Month = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"),
+  x1 = c(150000,160000,170000,180000,190000,200000,210000,220000,230000,240000,250000,260000),
+  x2 = c(8000,9500,10000,10500,11000,9000,11500,12000,12500,13000,14000,15000),
+  x3 = c(5,4.5,4.8,4.6,5.1,4.7,4.9,5,5.2,5.3,5.4,5.5),
+  x4 = c(8.5,8.2,8.4,8.5,8.6,8.7,8.8,8.9,8.7,8.8,8.9,9),
+  x5 = c(20000,22000,25000,23000,30000,28000,27000,35000,40000,45000,50000,60000),
+  y = c(120,150,160,165,180,170,190,210,230,250,300,350)
+)
+
+# Define UI
+ui <- dashboardPage(
+  dashboardHeader(title = "Sales Volume Estimation"),
+  dashboardSidebar(),
+  dashboardBody(
+    fluidPage(
+      h2(tags$b("Monthly Sales Volume Estimation")),
+      fluidRow(
+        box(
+          title = "Sales Volume Prediction",
+          width = 8,
+          solidHeader = TRUE,
+          numericInput("input_x1", "Number of web visitors :", value = 250000, min = 0),
+          numericInput("input_x2", "Number of monthly transactions :", value = 15000, min = 0),
+          numericInput("input_x3", "Average number of items per transactions :", value = 5.6, min = 0),
+          numericInput("input_x4", "Customer satisfaction rating :", value = 5.7, min = 0),
+          numericInput("input_x5", "Number of online advertising :", value = 65000, min = 0),
+          actionButton("estimateBtn", "Predict_Estimate")),
+        box(
+          title = "Multiple Linear Regression Equation",
+          width = 4,
+          solidHeader = TRUE,
+          status = "info",
+          textOutput("regression_equation")
+        ),
+        box(
+          title = "Estimated Monthly Sales (in USD)",
+          width = 4,
+          solidHeader = TRUE,
+          status = "info",
+          textOutput("estimate_predict")
+        )
+      )
+    )
+  )
+)
+
+
+# Define server
+server <- function(input, output) {
+  # Perform multiple linear regression
+  lm_model <- lm(y ~ x1 + x2 + x3 + x4 + x5, data = e.corm)
+  
+  # Output regression equation
+  output$regression_equation <- renderText({
+    paste("Y =", round(coef(lm_model)[1], 2),"+",
+          round(coef(lm_model)[2], 2),"*X1 +",
+          round(coef(lm_model)[3], 2),"*X2 +",
+          round(coef(lm_model)[4], 2),"*X3 +",
+          round(coef(lm_model)[5], 2),"*X4 +",
+          round(coef(lm_model)[6], 2),"*X5 ")
+  })
+  
+  # Predict personnel needs
+  output$estimate_predict <- renderText({
+    if (input$estimateBtn > 0) {
+      new_data <- data.frame(
+        x1 = input$input_x1,
+        x2 = input$input_x2,
+        x3 = input$input_x3,
+        x4 = input$input_x4,
+        x5 = input$input_x5
+      )
+      predicted_value <- predict(lm_model, newdata = new_data)
+      paste("Predicted Sales Volume : $", round(predicted_value, 2))
+    }
+  })
+}
+
+# Run the Shiny app
+shinyApp(ui, server)
